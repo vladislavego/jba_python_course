@@ -97,6 +97,7 @@ def delete_task():
 
 
 def add_new_task():
+    print()
     task_description = input("Enter task\n")
     deadline = input("Enter deadline\n")
     new_task = Table(task=task_description, deadline=datetime.strptime(deadline, f"%Y-%m-%d"))
@@ -119,7 +120,6 @@ def start_to_do_list():
         elif what_to_do == "4":
             get_missed_tasks()
         elif what_to_do == "5":
-            print()
             add_new_task()
         elif what_to_do == '6':
             delete_task()
