@@ -113,8 +113,7 @@ def start_to_do_list():
         if what_to_do == "1":
             get_day_tasks()
         elif what_to_do == "2":
-            for day in range(7):
-                get_day_tasks(day)
+            get_week_tasks()
         elif what_to_do == "3":
             get_all_tasks()
         elif what_to_do == "4":
