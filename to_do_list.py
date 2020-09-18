@@ -1,4 +1,3 @@
-# Write your code here
 from datetime import datetime, timedelta
 
 from sqlalchemy import Column, Integer, String, Date
@@ -27,9 +26,26 @@ def ask_user():
 1) Today's tasks
 2) Week's tasks
 3) All tasks
-4) Add task
+4) Missed tasks
+5) Add task
+6) Delete task
 0) Exit
 """)
+
+
+def print_tasks(tasks, description_format=0, message="Nothing to do!"):
+    if tasks:
+        task_position = 1
+        if description_format == 0:
+            for task in tasks:
+                print(f"{task_position}. {task.task}")
+                task_position += 1
+        else:
+            for task in tasks:
+                print(f"{task_position}. {task.task}. {task.deadline.strftime('%d')} {task.deadline.strftime('%b')}")
+                task_position += 1
+    else:
+        print(message)
 
 
 def get_day_tasks(day_number=None):
@@ -40,26 +56,44 @@ def get_day_tasks(day_number=None):
         print(f"Today {datetime.today().strftime('%d')} {datetime.today().strftime('%b')}:")
     else:
         tasks = session.query(Table).filter(Table.deadline == datetime.today().date() + timedelta(day_number)).all()
-        current_day = datetime.today() + timedelta(day)
+        current_day = datetime.today() + timedelta(day_number)
         day_name = week_days[current_day.weekday()]
         print()
         print(f"{day_name} {current_day.strftime('%d')} {current_day.strftime('%b')}:")
-    if tasks:
-        task_position = 1
-        for task in tasks:
-            print(f"{task_position}. {task.task}")
-            task_position += 1
-    else:
-        print("Nothing to do!")
+    print_tasks(tasks)
+
+
+def get_week_tasks():
+    days_in_week = 7
+    for day in range(days_in_week):
+        get_day_tasks(day)
 
 
 def get_all_tasks():
-    all_tasks = session.query(Table).order_by(Table.deadline).all()
+    print()
     print("All tasks:")
-    task_position = 1
-    for task in all_tasks:
-        print(f"{task_position}. {task.task}. {task.deadline.strftime('%d')} {task.deadline.strftime('%b')}")
-        task_position += 1
+    tasks = session.query(Table).order_by(Table.deadline).all()
+    print_tasks(tasks, 1)
+
+
+def get_missed_tasks():
+    print()
+    print("Missed tasks:")
+    tasks = session.query(Table).filter(Table.deadline < datetime.today().date()).order_by(Table.deadline).all()
+    print_tasks(tasks, 1, "There's no missed tasks")
+
+
+def delete_task():
+    print()
+    print("Choose the number of the task you want to delete:")
+    tasks = session.query(Table).order_by(Table.deadline).all()
+    print_tasks(tasks, 1, "Nothing to delete")
+    if tasks:
+        delete = int(input())
+        row_to_delete = tasks[delete - 1]
+        session.delete(row_to_delete)
+        session.commit()
+        print("The task has been deleted!")
 
 
 def add_new_task():
@@ -71,24 +105,31 @@ def add_new_task():
     print("The task has been added!")
 
 
-what_to_do = ask_user()
-
-while what_to_do != "0":
-
-    if what_to_do == "1":
-        get_day_tasks()
-    elif what_to_do == "2":
-        for day in range(7):
-            get_day_tasks(day)
-    elif what_to_do == "3":
-        get_all_tasks()
-    elif what_to_do == "4":
-        print()
-        add_new_task()
-    else:
-        print("Wrong command")
+def start_to_do_list():
     what_to_do = ask_user()
 
-print()
-print("Bye!")
+    while what_to_do != "0":
+
+        if what_to_do == "1":
+            get_day_tasks()
+        elif what_to_do == "2":
+            for day in range(7):
+                get_day_tasks(day)
+        elif what_to_do == "3":
+            get_all_tasks()
+        elif what_to_do == "4":
+            get_missed_tasks()
+        elif what_to_do == "5":
+            print()
+            add_new_task()
+        elif what_to_do == '6':
+            delete_task()
+        else:
+            print("Wrong command")
+        what_to_do = ask_user()
+    print()
+    print("Bye!")
+
+
+start_to_do_list()
 
