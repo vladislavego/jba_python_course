@@ -33,19 +33,19 @@ def ask_user():
 """)
 
 
-def print_tasks(tasks, description_format=0, message="Nothing to do!"):
+def print_tasks(tasks, task_description_format="day", message_if_empty="Nothing to do!"):
     if tasks:
         task_position = 1
-        if description_format == 0:
+        if task_description_format == "day":
             for task in tasks:
                 print(f"{task_position}. {task.task}")
                 task_position += 1
-        else:
+        elif task_description_format == "all":
             for task in tasks:
                 print(f"{task_position}. {task.task}. {task.deadline.strftime('%d')} {task.deadline.strftime('%b')}")
                 task_position += 1
     else:
-        print(message)
+        print(message_if_empty)
 
 
 def get_day_tasks(day_number=None):
@@ -73,21 +73,21 @@ def get_all_tasks():
     print()
     print("All tasks:")
     tasks = session.query(Table).order_by(Table.deadline).all()
-    print_tasks(tasks, 1)
+    print_tasks(tasks, "all")
 
 
 def get_missed_tasks():
     print()
     print("Missed tasks:")
     tasks = session.query(Table).filter(Table.deadline < datetime.today().date()).order_by(Table.deadline).all()
-    print_tasks(tasks, 1, "There's no missed tasks")
+    print_tasks(tasks, "all", "There's no missed tasks")
 
 
 def delete_task():
     print()
     print("Choose the number of the task you want to delete:")
     tasks = session.query(Table).order_by(Table.deadline).all()
-    print_tasks(tasks, 1, "Nothing to delete")
+    print_tasks(tasks, "all", "Nothing to delete")
     if tasks:
         delete = int(input())
         row_to_delete = tasks[delete - 1]
@@ -111,21 +111,22 @@ def start_to_do_list():
 
     while what_to_do != "0":
 
-        if what_to_do == "1":
+        if what_to_do == '1':
             get_day_tasks()
-        elif what_to_do == "2":
+        elif what_to_do == '2':
             get_week_tasks()
-        elif what_to_do == "3":
+        elif what_to_do == '3':
             get_all_tasks()
-        elif what_to_do == "4":
+        elif what_to_do == '4':
             get_missed_tasks()
-        elif what_to_do == "5":
+        elif what_to_do == '5':
             add_new_task()
         elif what_to_do == '6':
             delete_task()
         else:
             print("Wrong command")
         what_to_do = ask_user()
+
     print()
     print("Bye!")
 
