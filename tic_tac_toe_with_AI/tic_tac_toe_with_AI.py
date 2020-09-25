@@ -1,8 +1,13 @@
+import random
+
+
 class GameField:
 
-    def __init__(self, initial_state: list):
-        self.state = initial_state
-        self.status = "Game not finished"
+    def __init__(self, initial_state: list = None):
+        if initial_state is None:
+            self.state = list("         ")
+        else:
+            self.state = initial_state
 
     def __get_row_list(self):
         return [[self.state[i] for i in range(k, k + 3)] for k in (0, 3, 6)]
@@ -15,22 +20,21 @@ class GameField:
         print("---------")
         for field_line in field_state:
             print(f"| {' '.join(field_line)} |")
-        print("--------")
+        print("---------")
 
     def is_cell_empty(self, cell_coordinates: tuple):
         column, row = cell_coordinates
         field_state = self.__get_column_list()
         if field_state[column][row] == ' ':
             return True
-        print("This cell is occupied! Choose another one!")
         return False
 
-    def __fill_cell(self, cell_coordinates: tuple):
+    def __fill_cell(self, who_update, cell_coordinates: tuple):
         column, row = cell_coordinates
         field_state = self.__get_column_list()
-        if self.state.count('X') > self.state.count('O'):
+        if who_update == "computer":
             field_state[column][row] = 'O'
-        else:
+        elif who_update == "player":
             field_state[column][row] = 'X'
         self.state = field_state
 
@@ -38,9 +42,9 @@ class GameField:
         field_lines = [[self.state[i][k] for i in range(3)] for k in (2, 1, 0)]
         self.state = [cell for line in field_lines for cell in line]
 
-    def update_field_state(self, cell_coordinates: tuple):
+    def update_field_state(self, who_update, cell_coordinates: tuple):
         if self.is_cell_empty(cell_coordinates):
-            self.__fill_cell(cell_coordinates)
+            self.__fill_cell(who_update, cell_coordinates)
             self.__swap_rows_to_columns()
 
     def __is_empty_cells(self):
@@ -60,17 +64,26 @@ class GameField:
         x_win_combination = ['X', 'X', 'X']
         o_win_combination = ['O', 'O', 'O']
         if self.__is_win_combination(x_win_combination):
-            self.status = "X wins"
             return "X wins"
         if self.__is_win_combination(o_win_combination):
-            self.status = "O wins"
             return "O wins"
         if not self.__is_empty_cells():
-            self.status = "Draw"
             return "Draw"
+        return "Game not finished"
+
+
+class Computer:
+    def __init__(self):
+        self.level = 'easy'
+
+    def fill_cell(self):
+        return random.randint(0, 2), random.randint(0, 2)
 
 
 class Player:
+
+    def __init__(self):
+        pass
 
     def __is_initial_correct(self, initial_cells: str) -> bool:
         correct_symbols = ['X', 'O', '_']
@@ -104,26 +117,51 @@ class Player:
         return int(cell_coordinates[0]) - 1, int(cell_coordinates[1]) - 1
 
 
-def start_game():
-    player = Player()
-    game_field = GameField(player.get_initial_field_state())
-    game_field.print_game_field()
-    game_field.check_status()
-    while game_field.status == "Game not finished":
-        cell = player.ask_cell_coordinates()
-        if not game_field.is_cell_empty(cell):
-            continue
-        game_field.update_field_state(cell)
+class Game:
+
+    def __init__(self):
+        self.status = "Game not finished"
+
+    def start_game(self):
+        player = Player()
+        game_field = GameField()
+        computer = Computer()
         game_field.print_game_field()
-        game_field.check_status()
-    status = game_field.status
-    if status == "Draw":
-        print("Draw")
-    elif status == "X wins":
-        print("X wins")
-    elif status == "O wins":
-        print("O wins")
+        self.status = game_field.check_status()
+        self.start_game_cycle(game_field, player, computer)
+        if self.status == "Draw":
+            print("Draw")
+        elif self.status == "X wins":
+            print("X wins")
+        elif self.status == "O wins":
+            print("O wins")
+
+    def start_game_cycle(self, game_field, player, computer):
+        while self.status == "Game not finished":
+            self.player_move(game_field, player)
+            if self.status != "Game not finished":
+                break
+            self.computer_move(game_field, computer)
+
+    def player_move(self, game_field, player):
+        cell = player.ask_cell_coordinates()
+        while not game_field.is_cell_empty(cell):
+            print("This cell is occupied! Choose another one!")
+            cell = player.ask_cell_coordinates()
+        game_field.update_field_state("player", cell)
+        game_field.print_game_field()
+        self.status = game_field.check_status()
+
+    def computer_move(self, game_field, computer):
+        cell = computer.fill_cell()
+        print(f'Making move level "{computer.level}"')
+        while not game_field.is_cell_empty(cell):
+            cell = computer.fill_cell()
+        game_field.update_field_state("computer", cell)
+        game_field.print_game_field()
+        self.status = game_field.check_status()
 
 
-start_game()
+game = Game()
+game.start_game()
 
