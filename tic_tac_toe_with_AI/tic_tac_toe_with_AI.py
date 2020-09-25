@@ -76,7 +76,8 @@ class Computer:
     def __init__(self):
         self.level = 'easy'
 
-    def fill_cell(self):
+    @staticmethod
+    def fill_cell():
         return random.randint(0, 2), random.randint(0, 2)
 
 
@@ -85,7 +86,8 @@ class Player:
     def __init__(self):
         pass
 
-    def __is_initial_correct(self, initial_cells: str) -> bool:
+    @staticmethod
+    def __is_initial_correct(initial_cells: str) -> bool:
         correct_symbols = ['X', 'O', '_']
         correct_length = 9
         return all([cell in correct_symbols for cell in initial_cells]) and len(initial_cells) == correct_length
@@ -96,7 +98,8 @@ class Player:
             initial_cells = input("Unknown sequence. Enter cells: ")
         return list(initial_cells.replace('_', ' '))
 
-    def __is_coordinates_correct(self, cell_coordinates: list):
+    @staticmethod
+    def __is_coordinates_correct(cell_coordinates: list):
         correct_length = 2
         correct_values = ['1', '2', '3']
         if not ''.join(cell_coordinates).isdigit():
@@ -122,12 +125,15 @@ class Game:
     def __init__(self):
         self.status = "Game not finished"
 
+    def update_status(self, game_field):
+        self.status = game_field.check_status()
+
     def start_game(self):
         player = Player()
         game_field = GameField()
         computer = Computer()
         game_field.print_game_field()
-        self.status = game_field.check_status()
+        self.update_status(game_field)
         self.start_game_cycle(game_field, player, computer)
         if self.status == "Draw":
             print("Draw")
@@ -138,30 +144,29 @@ class Game:
 
     def start_game_cycle(self, game_field, player, computer):
         while self.status == "Game not finished":
-            self.player_move(game_field, player)
+            self.start_player(game_field, player)
             if self.status != "Game not finished":
                 break
-            self.computer_move(game_field, computer)
+            self.start_computer(game_field, computer)
 
-    def player_move(self, game_field, player):
+    def start_player(self, game_field, player):
         cell = player.ask_cell_coordinates()
         while not game_field.is_cell_empty(cell):
             print("This cell is occupied! Choose another one!")
             cell = player.ask_cell_coordinates()
         game_field.update_field_state("player", cell)
         game_field.print_game_field()
-        self.status = game_field.check_status()
+        self.update_status(game_field)
 
-    def computer_move(self, game_field, computer):
+    def start_computer(self, game_field, computer):
         cell = computer.fill_cell()
         print(f'Making move level "{computer.level}"')
         while not game_field.is_cell_empty(cell):
             cell = computer.fill_cell()
         game_field.update_field_state("computer", cell)
         game_field.print_game_field()
-        self.status = game_field.check_status()
+        self.update_status(game_field)
 
 
 game = Game()
 game.start_game()
-
