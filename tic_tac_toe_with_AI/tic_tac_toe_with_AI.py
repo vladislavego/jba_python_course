@@ -10,10 +10,10 @@ class GameField:
             self.state = initial_state
 
     def __get_row_list(self):
-        return [[self.state[i] for i in range(k, k + 3)] for k in (0, 3, 6)]
+        return [self.state[cell:cell+3] for cell in (0, 3, 6)]
 
     def __get_column_list(self):
-        return [[self.state[i] for i in range(k, k - 7, -3)] for k in (6, 7, 8)]
+        return [self.state[cell::-3] for cell in (6, 7, 8)]
 
     def print_game_field(self):
         field_state = self.__get_row_list()
@@ -32,10 +32,10 @@ class GameField:
     def __fill_cell(self, who_update, cell_coordinates: tuple):
         column, row = cell_coordinates
         field_state = self.__get_column_list()
-        if who_update == "computer":
-            field_state[column][row] = 'O'
-        elif who_update == "player":
+        if who_update == 1:
             field_state[column][row] = 'X'
+        elif who_update == 2:
+            field_state[column][row] = 'O'
         self.state = field_state
 
     def __swap_rows_to_columns(self):
@@ -72,19 +72,14 @@ class GameField:
         return "Game not finished"
 
 
-class Computer:
-    def __init__(self):
-        self.level = 'easy'
-
-    @staticmethod
-    def fill_cell():
-        return random.randint(0, 2), random.randint(0, 2)
-
-
 class Player:
 
-    def __init__(self):
-        pass
+    player_number = 0
+
+    def __init__(self, player_type: str):
+        self.player_type = player_type
+        Player.player_number += 1
+        self.number = Player.player_number
 
     @staticmethod
     def __is_initial_correct(initial_cells: str) -> bool:
@@ -128,13 +123,50 @@ class Game:
     def update_status(self, game_field):
         self.status = game_field.check_status()
 
+    @staticmethod
+    def generate_cell_to_fill():
+        return random.randint(0, 2), random.randint(0, 2)
+
+    @staticmethod
+    def is_correct_user_input(user_input: list):
+        correct_parameters = ["easy", "user"]
+        length = len(user_input)
+        if length == 3 and user_input[0] == "start" and \
+           user_input[1] in correct_parameters and user_input[2] in correct_parameters \
+           or length == 1 and user_input[0] == "exit":
+            return length
+        return False
+
+    @staticmethod
+    def get_user_choice():
+        user_input = input("""Input "start player1 player2" to play.
+player1 and player2 can only have "user" or "easy" value. 
+For example: print "start easy easy" to watch AI battle.           
+Input "exit" to exit game.
+
+Input command: """).split()
+        return user_input
+
+    def ask_to_play(self):
+        user_input = self.get_user_choice()
+        while not self.is_correct_user_input(user_input) in (1, 3):
+            print("Bad parameters")
+            user_input = self.get_user_choice()
+        if self.is_correct_user_input(user_input) == 3:
+            return user_input[1::]
+        else:
+            return False
+
     def start_game(self):
-        player = Player()
+        play = self.ask_to_play()
+        if not play:
+            return
+        player_one_type, player_two_type = play[0], play[1]
+        player_one, player_two = Player(player_one_type), Player(player_two_type)
         game_field = GameField()
-        computer = Computer()
         game_field.print_game_field()
         self.update_status(game_field)
-        self.start_game_cycle(game_field, player, computer)
+        self.start_game_cycle(game_field, player_one, player_two)
         if self.status == "Draw":
             print("Draw")
         elif self.status == "X wins":
@@ -142,30 +174,37 @@ class Game:
         elif self.status == "O wins":
             print("O wins")
 
-    def start_game_cycle(self, game_field, player, computer):
+    def start_game_cycle(self, game_field, player_one, player_two):
         while self.status == "Game not finished":
-            self.start_player(game_field, player)
+            self.make_move(game_field, player_one)
             if self.status != "Game not finished":
                 break
-            self.start_computer(game_field, computer)
+            self.make_move(game_field, player_two)
 
-    def start_player(self, game_field, player):
+    def make_user_move(self, game_field, player):
         cell = player.ask_cell_coordinates()
         while not game_field.is_cell_empty(cell):
             print("This cell is occupied! Choose another one!")
             cell = player.ask_cell_coordinates()
-        game_field.update_field_state("player", cell)
+        game_field.update_field_state(player.number, cell)
+
         game_field.print_game_field()
         self.update_status(game_field)
 
-    def start_computer(self, game_field, computer):
-        cell = computer.fill_cell()
-        print(f'Making move level "{computer.level}"')
+    def make_computer_move(self, game_field, player):
+        cell = self.generate_cell_to_fill()
+        print(f'Making move level "{player.player_type}"')
         while not game_field.is_cell_empty(cell):
-            cell = computer.fill_cell()
-        game_field.update_field_state("computer", cell)
+            cell = self.generate_cell_to_fill()
+        game_field.update_field_state(player.number, cell)
         game_field.print_game_field()
         self.update_status(game_field)
+
+    def make_move(self, game_field, player):
+        if player.player_type == "user":
+            self.make_user_move(game_field, player)
+        else:
+            self.make_computer_move(game_field, player)
 
 
 game = Game()
