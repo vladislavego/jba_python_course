@@ -11,7 +11,7 @@ class GameField:
             self.state = initial_state
 
     def __get_row_list(self):
-        return [self.state[cell:cell+3] for cell in (0, 3, 6)]
+        return [self.state[cell:cell + 3] for cell in (0, 3, 6)]
 
     def __get_column_list(self):
         return [self.state[cell::-3] for cell in (6, 7, 8)]
@@ -76,12 +76,34 @@ class GameField:
             return "Draw"
         return "Game not finished"
 
+    def is_pre_win(self, player_number):
+        marker = 'X'
+        if player_number % 2 == 0:
+            marker = 'O'
+        win_cells = []
+        rows = self.__get_row_list()
+        columns = self.__get_column_list()
+        side_diagonal = [columns[i][i] for i in range(3)]
+        main_diagonal = [rows[i][i] for i in range(3)]
+        # line with index i in rows have i + 2 index in game_field
+        # to get game_field line index: 2 - i
+        is_pre_win_row = [(n, 2 - m) for m in range(3) for n in range(3)
+                          if rows[m].count(marker) == 2 and rows[m][n] == ' ']
+        is_pre_win_column = [(n, m) for m in range(3) for n in range(3)
+                             if columns[n].count(marker) == 2 and columns[n][m] == ' ']
+        is_pre_win_main_diagonal = [(i, 2 - i) for i in range(3)
+                                    if main_diagonal.count(marker) == 2 and main_diagonal[i] == ' ']
+        is_pre_win_side_diagonal = [(i, i) for i in range(3)
+                                    if side_diagonal.count(marker) == 2 and side_diagonal[i] == ' ']
+        for pre_win in (is_pre_win_row, is_pre_win_column, is_pre_win_main_diagonal, is_pre_win_side_diagonal):
+            win_cells.extend(pre_win)
+        return win_cells
+
 
 class Players:
-
     players_number = 0
 
-    def __new__(cls, player_type="user"):
+    def __new__(cls, player_type="user", field_state=None):
         Players.players_number += 1
         if player_type == "user":
             user = object.__new__(User)
@@ -98,7 +120,6 @@ class Players:
 
 
 class User(Players):
-
     player_type = "user"
     users_number = 0
 
@@ -141,7 +162,6 @@ class User(Players):
 
 
 class Computer(Players):
-
     player_type = "computer"
     computers_number = 0
 
@@ -149,7 +169,7 @@ class Computer(Players):
         level = level
 
     @staticmethod
-    def __generate_cell_to_fill():
+    def generate_cell_to_fill():
         return random.randint(0, 2), random.randint(0, 2)
 
 
@@ -162,24 +182,21 @@ class Game:
         self.status = game_field.check_status()
 
     @staticmethod
-    def __generate_cell_to_fill():
-        return random.randint(0, 2), random.randint(0, 2)
-
-    @staticmethod
     def __is_correct_user_input(user_input: list):
-        correct_parameters = ["easy", "user"]
+        correct_parameters = ["easy", "user", "medium"]
         length = len(user_input)
-        if length == 3 and user_input[0] == "start" and \
-           user_input[1] in correct_parameters and user_input[2] in correct_parameters \
-           or length == 1 and user_input[0] == "exit":
+        play_game = length == 3 and user_input[0] == "start" and user_input[1] in correct_parameters and \
+                    user_input[2] in correct_parameters
+        exit_game = length == 1 and user_input[0] == "exit"
+        if play_game or exit_game:
             return length
         return False
 
     @staticmethod
     def __get_user_choice():
         user_input = input("""Input "start player1 player2" to play.
-player1 and player2 can only have "user" or "easy" value. 
-For example: print "start easy easy" to watch AI battle.           
+player1 and player2 can only have "user", "easy" or "medium" value. 
+For example: print "start easy easy" to watch AI battle or "start medium user" to compete with it.           
 Input "exit" to exit game.
 
 Input command: """).split()
@@ -233,15 +250,32 @@ Input command: """).split()
         self.__update_status(game_field)
 
     def __make_computer_move(self, game_field, player):
-        cell = self.__generate_cell_to_fill()
+        if player.level == "medium":
+            cell = self.__make_medium_move(game_field, player)
+        else:
+            cell = player.generate_cell_to_fill()
         print()
         print(f'Making move level "{player.level}"...')
         time.sleep(2)
         while not game_field.is_cell_empty(cell):
-            cell = self.__generate_cell_to_fill()
+            cell = player.generate_cell_to_fill()
         game_field.update_field_state(player.number, cell)
         game_field.print_game_field()
         self.__update_status(game_field)
+
+    @staticmethod
+    def __make_medium_move(game_field, player):
+        computer_win_cells = game_field.is_pre_win(player.number)
+        user_win_cells = game_field.is_pre_win(player.number + 1)
+        if computer_win_cells:
+            cell = random.choice(computer_win_cells)
+            computer_win_cells.remove(cell)
+        elif user_win_cells:
+            cell = random.choice(user_win_cells)
+            user_win_cells.remove(cell)
+        else:
+            cell = player.generate_cell_to_fill()
+        return cell
 
     def __make_move(self, game_field, player):
         if player.player_type == "user":
