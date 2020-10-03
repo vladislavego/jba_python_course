@@ -10,14 +10,14 @@ class GameField:
         else:
             self.state = initial_state
 
-    def __get_row_list(self):
+    def get_row_list(self):
         return [self.state[cell:cell + 3] for cell in (0, 3, 6)]
 
-    def __get_column_list(self):
+    def get_column_list(self):
         return [self.state[cell::-3] for cell in (6, 7, 8)]
 
     def print_game_field(self):
-        field_state = self.__get_row_list()
+        field_state = self.get_row_list()
         row_number = 3
         print()
         print("       ---------")
@@ -27,19 +27,19 @@ class GameField:
         print("       ---------")
         print("         1 2 3")
 
-    def is_cell_empty(self, cell_coordinates: tuple):
+    def is_cell_empty(self, cell_coordinates: tuple) -> bool:
         column, row = cell_coordinates
-        field_state = self.__get_column_list()
+        field_state = self.get_column_list()
         if field_state[column][row] == ' ':
             return True
         return False
 
-    def __fill_cell(self, who_update, cell_coordinates: tuple):
+    def __fill_cell(self, who_update: int, cell_coordinates: tuple):
         column, row = cell_coordinates
-        field_state = self.__get_column_list()
-        if who_update == 1:
+        field_state = self.get_column_list()
+        if who_update % 2 == 1:
             field_state[column][row] = 'X'
-        elif who_update == 2:
+        else:
             field_state[column][row] = 'O'
         self.state = field_state
 
@@ -47,25 +47,25 @@ class GameField:
         field_lines = [[self.state[i][k] for i in range(3)] for k in (2, 1, 0)]
         self.state = [cell for line in field_lines for cell in line]
 
-    def update_field_state(self, who_update, cell_coordinates: tuple):
+    def update_field_state(self, who_update: int, cell_coordinates: tuple):
         if self.is_cell_empty(cell_coordinates):
             self.__fill_cell(who_update, cell_coordinates)
             self.__swap_rows_to_columns()
 
-    def __is_empty_cells(self):
+    def __is_empty_cells(self) -> bool:
         return any(cell == ' ' for cell in self.state)
 
-    def __is_win_combination(self, win_combination: list):
+    def __is_win_combination(self, win_combination: list) -> bool:
         win_combination = win_combination
-        rows = self.__get_row_list()
-        columns = self.__get_column_list()
+        rows = self.get_row_list()
+        columns = self.get_column_list()
         is_win_row = any(row == win_combination for row in rows)
         is_win_column = any(column == win_combination for column in columns)
         x_or_o = win_combination[0]
         is_win_diagonal = all(rows[i][i] == x_or_o for i in range(3)) or all(columns[i][i] == x_or_o for i in range(3))
         return is_win_row or is_win_column or is_win_diagonal
 
-    def check_status(self):
+    def check_status(self) -> str:
         x_win_combination = ['X', 'X', 'X']
         o_win_combination = ['O', 'O', 'O']
         if self.__is_win_combination(x_win_combination):
@@ -75,29 +75,6 @@ class GameField:
         if not self.__is_empty_cells():
             return "Draw"
         return "Game not finished"
-
-    def is_pre_win(self, player_number):
-        marker = 'X'
-        if player_number % 2 == 0:
-            marker = 'O'
-        win_cells = []
-        rows = self.__get_row_list()
-        columns = self.__get_column_list()
-        side_diagonal = [columns[i][i] for i in range(3)]
-        main_diagonal = [rows[i][i] for i in range(3)]
-        # line with index i in rows have i + 2 index in game_field
-        # to get game_field line index: 2 - i
-        is_pre_win_row = [(n, 2 - m) for m in range(3) for n in range(3)
-                          if rows[m].count(marker) == 2 and rows[m][n] == ' ']
-        is_pre_win_column = [(n, m) for m in range(3) for n in range(3)
-                             if columns[n].count(marker) == 2 and columns[n][m] == ' ']
-        is_pre_win_main_diagonal = [(i, 2 - i) for i in range(3)
-                                    if main_diagonal.count(marker) == 2 and main_diagonal[i] == ' ']
-        is_pre_win_side_diagonal = [(i, i) for i in range(3)
-                                    if side_diagonal.count(marker) == 2 and side_diagonal[i] == ' ']
-        for pre_win in (is_pre_win_row, is_pre_win_column, is_pre_win_main_diagonal, is_pre_win_side_diagonal):
-            win_cells.extend(pre_win)
-        return win_cells
 
 
 class Players:
@@ -123,8 +100,9 @@ class User(Players):
     player_type = "user"
     users_number = 0
 
-    def __init__(self, level=None):
-        pass
+    def __init__(self, name=None):
+        self.class_number = User.users_number
+        self.number = Players.players_number
 
     @staticmethod
     def __is_initial_correct(initial_cells: str) -> bool:
@@ -139,7 +117,7 @@ class User(Players):
         return list(initial_cells.replace('_', ' '))
 
     @staticmethod
-    def __is_coordinates_correct(cell_coordinates: list):
+    def __is_coordinates_correct(cell_coordinates: list) -> bool:
         correct_length = 2
         correct_values = ['1', '2', '3']
         if not ''.join(cell_coordinates).isdigit():
@@ -165,32 +143,77 @@ class Computer(Players):
     player_type = "computer"
     computers_number = 0
 
-    def __init__(self, level):
+    def __init__(self, level: str):
         level = level
+        self.class_number = Computer.computers_number
+        self.number = Players.players_number
+
+    def is_pre_win(self, player_number: int) -> list:
+        win_cells = []
+        for pre_win in self.find_pre_win_cells(player_number):
+            win_cells.extend(pre_win)
+        return win_cells
 
     @staticmethod
-    def generate_cell_to_fill():
+    def find_pre_win_cells(player_number: int) -> tuple:
+        marker = 'X'
+        if player_number % 2 == 0:
+            marker = 'O'
+        rows = game.game_field.get_row_list()
+        columns = game.game_field.get_column_list()
+        side_diagonal = [columns[i][i] for i in range(3)]
+        main_diagonal = [rows[i][i] for i in range(3)]
+        # line with index i in rows have 2 - i index in game_field
+        # to get game_field line index: 2 - i
+        is_pre_win_row = [(n, 2 - m) for m in range(3) for n in range(3)
+                          if rows[m].count(marker) == 2 and rows[m][n] == ' ']
+        is_pre_win_column = [(n, m) for m in range(3) for n in range(3)
+                             if columns[n].count(marker) == 2 and columns[n][m] == ' ']
+        is_pre_win_main_diagonal = [(i, 2 - i) for i in range(3)
+                                    if main_diagonal.count(marker) == 2 and main_diagonal[i] == ' ']
+        is_pre_win_side_diagonal = [(i, i) for i in range(3)
+                                    if side_diagonal.count(marker) == 2 and side_diagonal[i] == ' ']
+        return is_pre_win_row, is_pre_win_column, is_pre_win_main_diagonal, is_pre_win_side_diagonal
+
+    @staticmethod
+    def __generate_cell() -> tuple:
         return random.randint(0, 2), random.randint(0, 2)
+
+    def generate_cell_to_fill(self) -> tuple:
+        if self.level == "easy":
+            return self.__generate_cell()
+        computer_win_cells = self.is_pre_win(self.number)
+        user_win_cells = self.is_pre_win(self.number + 1)
+        if computer_win_cells:
+            cell = random.choice(computer_win_cells)
+            computer_win_cells.remove(cell)
+        elif user_win_cells:
+            cell = random.choice(user_win_cells)
+            user_win_cells.remove(cell)
+        else:
+            cell = self.__generate_cell()
+        return cell
 
 
 class Game:
 
     def __init__(self):
         self.status = "Game not finished"
+        self.game_field = GameField()
 
-    def __update_status(self, game_field):
-        self.status = game_field.check_status()
+    def __update_status(self):
+        self.status = self.game_field.check_status()
 
     @staticmethod
-    def __is_correct_user_input(user_input: list):
+    def __is_correct_user_input(user_input: list) -> int:
         correct_parameters = ["easy", "user", "medium"]
         length = len(user_input)
         play_game = length == 3 and user_input[0] == "start" and user_input[1] in correct_parameters and \
-                    user_input[2] in correct_parameters
+            user_input[2] in correct_parameters
         exit_game = length == 1 and user_input[0] == "exit"
         if play_game or exit_game:
             return length
-        return False
+        return 0
 
     @staticmethod
     def __get_user_choice():
@@ -220,10 +243,9 @@ Input command: """).split()
             return
         player_one_type, player_two_type = play
         player_one, player_two = Players(player_one_type), Players(player_two_type)
-        game_field = GameField()
-        game_field.print_game_field()
-        self.__update_status(game_field)
-        self.__start_game_cycle(game_field, player_one, player_two)
+        self.game_field.print_game_field()
+        self.__update_status()
+        self.__start_game_cycle(player_one, player_two)
         print()
         if self.status == "Draw":
             print("Draw")
@@ -232,56 +254,39 @@ Input command: """).split()
         elif self.status == "O wins":
             print("O wins")
 
-    def __start_game_cycle(self, game_field, player_one, player_two):
+    def __start_game_cycle(self, player_one, player_two):
         while self.status == "Game not finished":
-            self.__make_move(game_field, player_one)
+            self.__make_move(player_one)
             if self.status != "Game not finished":
                 break
-            self.__make_move(game_field, player_two)
+            self.__make_move(player_two)
 
-    def __make_user_move(self, game_field, player):
+    def __make_user_move(self, player):
         cell = player.ask_cell_coordinates()
-        while not game_field.is_cell_empty(cell):
+        while not self.game_field.is_cell_empty(cell):
             print("This cell is occupied! Choose another one!")
             cell = player.ask_cell_coordinates()
-        game_field.update_field_state(player.number, cell)
+        self.game_field.update_field_state(player.number, cell)
 
-        game_field.print_game_field()
-        self.__update_status(game_field)
+        self.game_field.print_game_field()
+        self.__update_status()
 
-    def __make_computer_move(self, game_field, player):
-        if player.level == "medium":
-            cell = self.__make_medium_move(game_field, player)
-        else:
-            cell = player.generate_cell_to_fill()
+    def __make_computer_move(self, player):
+        cell = player.generate_cell_to_fill()
         print()
         print(f'Making move level "{player.level}"...')
-        time.sleep(2)
-        while not game_field.is_cell_empty(cell):
+        while not self.game_field.is_cell_empty(cell):
             cell = player.generate_cell_to_fill()
-        game_field.update_field_state(player.number, cell)
-        game_field.print_game_field()
-        self.__update_status(game_field)
+        time.sleep(random.randint(2, 5))
+        self.game_field.update_field_state(player.number, cell)
+        self.game_field.print_game_field()
+        self.__update_status()
 
-    @staticmethod
-    def __make_medium_move(game_field, player):
-        computer_win_cells = game_field.is_pre_win(player.number)
-        user_win_cells = game_field.is_pre_win(player.number + 1)
-        if computer_win_cells:
-            cell = random.choice(computer_win_cells)
-            computer_win_cells.remove(cell)
-        elif user_win_cells:
-            cell = random.choice(user_win_cells)
-            user_win_cells.remove(cell)
-        else:
-            cell = player.generate_cell_to_fill()
-        return cell
-
-    def __make_move(self, game_field, player):
+    def __make_move(self, player):
         if player.player_type == "user":
-            self.__make_user_move(game_field, player)
+            self.__make_user_move(player)
         else:
-            self.__make_computer_move(game_field, player)
+            self.__make_computer_move(player)
 
 
 game = Game()
