@@ -80,7 +80,7 @@ class GameField:
 class Players:
     players_number = 0
 
-    def __new__(cls, game, player_type="user", ):
+    def __new__(cls, game, player_type="user"):
         Players.players_number += 1
         if player_type == "user":
             user = object.__new__(User)
