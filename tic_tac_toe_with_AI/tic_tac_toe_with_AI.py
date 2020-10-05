@@ -215,11 +215,7 @@ class Computer(Players):
         if win_cell:
             return win_cell
         if self.level == "hard":
-            choice = random.randint(1, 10)
-            if choice % 2 == 0:
-                priority_cell = self.__generate_cell_hard_free()
-            else:
-                priority_cell = self.__generate_cell_hard_block()
+            priority_cell = self.__generate_cell_hard()
             if priority_cell:
                 return priority_cell
         return self.__generate_cell()
@@ -237,45 +233,15 @@ class Computer(Players):
             cell = ()
         return cell
 
-    def __generate_cell_hard_block(self) -> tuple:
+    def __generate_cell_hard(self) -> tuple:
         computer_priority_cells = self.is_priority_cells(self.number)
         user_priority_cells = self.is_priority_cells(self.number + 1)
         if user_priority_cells:
-            if user_priority_cells == [(0, 1), (2, 1), (1, 0), (1, 2), (0, 2), (2, 0), (0, 0), (2, 2)]:
-                user_priority_cells = [(0, 2), (2, 0), (0, 0), (2, 2)]
-            elif (1, 1) in user_priority_cells:
-                user_priority_cells.remove((1, 1))
-                return 1, 1
-            elif len({(0, 2), (2, 0), (0, 0), (2, 2)}.intersection(set(user_priority_cells))) == 2:
-                user_priority_cells = list({(0, 2), (2, 0), (0, 0), (2, 2)}.intersection(set(user_priority_cells)))
             cell = random.choice(user_priority_cells)
             user_priority_cells.remove(cell)
         elif computer_priority_cells:
             cell = random.choice(computer_priority_cells)
             computer_priority_cells.remove(cell)
-        else:
-            cell = self.__generate_cell()
-        return cell
-
-    def __generate_cell_hard_free(self) -> tuple:
-        computer_priority_cells = self.is_priority_cells(self.number)
-        user_priority_cells = self.is_priority_cells(self.number + 1)
-        if computer_priority_cells:
-            if len({(0, 2), (2, 0), (0, 0), (2, 2)}.intersection(set(user_priority_cells))) == 2:
-                computer_priority_cells = list({(0, 2), (2, 0), (0, 0), (2, 2)}.intersection(set(user_priority_cells)))
-            elif (1, 1) in user_priority_cells:
-                user_priority_cells.remove((1, 1))
-                return 1, 1
-            cell = random.choice(computer_priority_cells)
-            computer_priority_cells.remove(cell)
-        elif user_priority_cells:
-            if user_priority_cells == [(0, 1), (2, 1), (1, 0), (1, 2), (0, 2), (2, 0), (0, 0), (2, 2)]:
-                user_priority_cells = [(0, 2), (2, 0), (0, 0), (2, 2)]
-            elif (1, 1) in user_priority_cells:
-                user_priority_cells.remove((1, 1))
-                return 1, 1
-            cell = random.choice(user_priority_cells)
-            user_priority_cells.remove(cell)
         else:
             cell = self.__generate_cell()
         return cell
@@ -329,7 +295,7 @@ Input command: """).split()
     def start_game(self):
         play = self.__ask_to_play()
         if not play:
-            return
+            return False
         player_one_type, player_two_type = play
         player_one, player_two = Players(player_one_type), Players(player_two_type)
         self.game_field.print_game_field()
@@ -338,10 +304,13 @@ Input command: """).split()
         print()
         if self.status == "Draw":
             print("Draw")
+            return True
         elif self.status == "X wins":
             print("X wins")
+            return True
         elif self.status == "O wins":
             print("O wins")
+            return True
 
     def __start_game_cycle(self, player_one, player_two):
         while self.status == "Game not finished":
@@ -393,10 +362,15 @@ def play_again():
 def ask_user_to_play():
     return input("Play again? (y/n): ")
 
+def play():
+    global game
+    game = Game()
+    if not game.start_game():
+        return
 
 game = Game()
-game.start_game()
-while play_again():
-    print()
-    game = Game()
-    game.start_game()
+if game.start_game():
+    while play_again():
+        print()
+        play()
+
