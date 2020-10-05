@@ -105,7 +105,7 @@ class User(Players):
 
     @staticmethod
     def __is_initial_correct(initial_cells: str) -> bool:
-        correct_symbols = ['X', 'O', '_']
+        correct_symbols = {'X', 'O', '_'}
         correct_length = 9
         return all([cell in correct_symbols for cell in initial_cells]) and len(initial_cells) == correct_length
 
@@ -118,7 +118,7 @@ class User(Players):
     @staticmethod
     def __is_coordinates_correct(cell_coordinates: list) -> bool:
         correct_length = 2
-        correct_values = ['1', '2', '3']
+        correct_values = {'1', '2', '3'}
         if not ''.join(cell_coordinates).isdigit():
             print("You should enter numbers!")
             return False
@@ -241,6 +241,13 @@ class Computer(Players):
         computer_priority_cells = self.is_priority_cells(self.number)
         user_priority_cells = self.is_priority_cells(self.number + 1)
         if user_priority_cells:
+            if user_priority_cells == [(0, 1), (2, 1), (1, 0), (1, 2), (0, 2), (2, 0), (0, 0), (2, 2)]:
+                user_priority_cells = [(0, 2), (2, 0), (0, 0), (2, 2)]
+            elif (1, 1) in user_priority_cells:
+                user_priority_cells.remove((1, 1))
+                return 1, 1
+            elif len({(0, 2), (2, 0), (0, 0), (2, 2)}.intersection(set(user_priority_cells))) == 2:
+                user_priority_cells = list({(0, 2), (2, 0), (0, 0), (2, 2)}.intersection(set(user_priority_cells)))
             cell = random.choice(user_priority_cells)
             user_priority_cells.remove(cell)
         elif computer_priority_cells:
@@ -254,9 +261,19 @@ class Computer(Players):
         computer_priority_cells = self.is_priority_cells(self.number)
         user_priority_cells = self.is_priority_cells(self.number + 1)
         if computer_priority_cells:
+            if len({(0, 2), (2, 0), (0, 0), (2, 2)}.intersection(set(user_priority_cells))) == 2:
+                computer_priority_cells = list({(0, 2), (2, 0), (0, 0), (2, 2)}.intersection(set(user_priority_cells)))
+            elif (1, 1) in user_priority_cells:
+                user_priority_cells.remove((1, 1))
+                return 1, 1
             cell = random.choice(computer_priority_cells)
             computer_priority_cells.remove(cell)
         elif user_priority_cells:
+            if user_priority_cells == [(0, 1), (2, 1), (1, 0), (1, 2), (0, 2), (2, 0), (0, 0), (2, 2)]:
+                user_priority_cells = [(0, 2), (2, 0), (0, 0), (2, 2)]
+            elif (1, 1) in user_priority_cells:
+                user_priority_cells.remove((1, 1))
+                return 1, 1
             cell = random.choice(user_priority_cells)
             user_priority_cells.remove(cell)
         else:
@@ -275,7 +292,7 @@ class Game:
 
     @staticmethod
     def __is_correct_user_input(user_input: list) -> int:
-        correct_parameters = ["easy", "user", "medium", "hard"]
+        correct_parameters = {"easy", "user", "medium", "hard"}
         length = len(user_input)
         play_game = length == 3 and user_input[0] == "start" and user_input[1] in correct_parameters and \
             user_input[2] in correct_parameters
@@ -361,5 +378,25 @@ Input command: """).split()
             self.__make_computer_move(player)
 
 
+def play_again():
+    print()
+    play_again = ask_user_to_play()
+    while play_again != 'n' and play_again != 'y':
+        print()
+        print("Choose 'y' to play or 'n' to exit")
+        print()
+        play_again = ask_user_to_play()
+    if play_again == 'y':
+        return True
+    return False
+
+def ask_user_to_play():
+    return input("Play again? (y/n): ")
+
+
 game = Game()
 game.start_game()
+while play_again():
+    print()
+    game = Game()
+    game.start_game()
