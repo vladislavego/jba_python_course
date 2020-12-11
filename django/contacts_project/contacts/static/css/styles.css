@@ -1,0 +1,25 @@
+#contacs_table th, #contacs_table td {
+    min-width: 50px; 
+    width: auto;
+}
+
+#contact_form {
+    position: absolute;
+    left: 65%;
+    top: 1%;
+}
+
+#contacts {
+    position: relative;
+    float: left;
+    top: 1%;    
+    margin-left: 5%;
+}
+
+.alert-danger {
+    padding: 0%;
+}
+
+.text-muted {
+    width: auto;
+}

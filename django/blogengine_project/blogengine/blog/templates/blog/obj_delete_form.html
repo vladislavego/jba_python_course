@@ -1,0 +1,16 @@
+{% extends 'blog/base_blog.html' %}
+
+{% load custom_tags %}
+
+{% block title %}
+    Delete {{ obj | get_object_class_name }} "{{ obj.title | title }}" - {{ block.super }}"
+{% endblock %}
+
+{% block content %}
+    <h3>Are you sure you want to delete <b>"{{ obj.title | title }}" {{ obj | get_object_class_name | lower }}</b></h3>
+    <form action="{{ obj.get_delete_url }}" method="post">
+        {% csrf_token %}
+        <a href="{{ obj.get_absolute_url }}">Cancel</a>
+        <button type="submit" class="btn btn-danger">Delete {{ obj | get_object_class_name | lower }}</button>
+    </form>
+{% endblock %}
