@@ -1,0 +1,9 @@
+{% load static %}
+<link rel="stylesheet" target="_blank" href="{% static 'css/base.css' %}">
+
+<form action="{% url 'edit_news_url' link=news.link %}" method="post">
+    {% csrf_token %}
+    <input type="text" name="title" value="{{ news.title }}" placeholder="Enter news's title">
+    <input type="textarea" name="text" value="{{ news.text }}" placeholder="Enter news's text">
+    <button type="submit">Edit</button>
+</form>

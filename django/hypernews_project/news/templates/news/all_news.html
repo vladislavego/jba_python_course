@@ -1,0 +1,19 @@
+{% load static %}
+<link rel="stylesheet" target="_blank" href="{% static 'css/base.css' %}">
+
+<h2>Hyper news</h2>
+<form action="/news/" method="get">
+    {% csrf_token %}
+    <input type="text" name="q" placeholder="Enter text to search">
+</form>
+{% regroup news|dictsortreversed:"created" by created.split.0 as grouped_news %}
+{% for group in grouped_news %}
+    <h4>{{ group.grouper }}</h4>
+    <ul>
+    {% for news in group.list %}
+        <li><a target="_blank" href="/news/{{ news.link }}/">{{ news.title }}</a></li>
+    {% endfor %}
+    </ul>
+{% endfor %}
+
+<a target="_blank" href="/news/create/">Create news</a>
